@@ -1,0 +1,30 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VPN.SimpleSub.Web", "src\VPN.SimpleSub.Web\VPN.SimpleSub.Web.csproj", "{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C885ECD7-4AB3-49E5-8108-0EDD08F7620C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7657F7A0-72ED-48E0-9FDB-CC3AA0E06A5B}"
+	ProjectSection(SolutionItems) = preProject
+		compose.yaml = compose.yaml
+	EndProjectSection
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1BBDA33C-303C-408E-9343-B52D45730B51}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1BBDA33C-303C-408E-9343-B52D45730B51}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1BBDA33C-303C-408E-9343-B52D45730B51}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1BBDA33C-303C-408E-9343-B52D45730B51}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07} = {C885ECD7-4AB3-49E5-8108-0EDD08F7620C}
+	EndGlobalSection
+EndGlobal

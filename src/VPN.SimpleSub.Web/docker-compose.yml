@@ -1,0 +1,16 @@
+services:
+  web-app:
+    container_name: dotnet_production_container
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "15000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+    env_file:
+      - .env
+    volumes:
+      - /home/user/dev/data:/appData:ro
+    restart: unless-stopped
