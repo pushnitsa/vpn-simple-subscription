@@ -8,10 +8,12 @@ namespace VPN.SimpleSub.Web.Controllers;
 public class SubscriptionController : ControllerBase
 {
     private readonly ISubscriptionService _subscriptionService;
+    private readonly ILogger<SubscriptionController> _logger;
     
-    public SubscriptionController(ISubscriptionService subscriptionService)
+    public SubscriptionController(ISubscriptionService subscriptionService, ILogger<SubscriptionController> logger)
     {
         _subscriptionService = subscriptionService;
+        _logger = logger;
     }
     
     public async Task<IActionResult> Index(string clientId)
@@ -20,6 +22,7 @@ public class SubscriptionController : ControllerBase
         
         if (string.IsNullOrEmpty(result))
         {
+            _logger.LogDebug("Subscription not found");
             return NotFound();
         }
         else
