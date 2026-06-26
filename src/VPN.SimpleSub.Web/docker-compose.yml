@@ -1,6 +1,6 @@
 services:
   web-app:
-    container_name: dotnet_production_container
+    container_name: vpn-simple-subscription
     build:
       context: .
       dockerfile: Dockerfile
