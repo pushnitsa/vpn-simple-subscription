@@ -14,7 +14,7 @@ var app = builder.Build();
 var appSettings = app.Services.GetRequiredService<IOptions<AppSettings>>().Value;
 app.MapControllerRoute(
     "subsController", 
-    $"{appSettings.SubscriptionRoute}/{{clientId?}}", 
-    new  { controller = "Subscription", action = "Index" });
+    $"{appSettings.SubscriptionRoute}/{{clientId}}/{{action}}", 
+    new  { controller = "Subscription" });
 
 app.Run();
