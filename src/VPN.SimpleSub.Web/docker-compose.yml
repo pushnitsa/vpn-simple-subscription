@@ -12,5 +12,5 @@ services:
     env_file:
       - .env
     volumes:
-      - /home/user/dev/data:/appData:ro
+      - /home/user/docker/vpn-sub/data:/appData:ro
     restart: unless-stopped
