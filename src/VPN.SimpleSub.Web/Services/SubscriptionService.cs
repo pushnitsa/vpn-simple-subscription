@@ -7,13 +7,19 @@ namespace VPN.SimpleSub.Web.Services;
 
 public class SubscriptionService : ISubscriptionService
 {
+    private readonly ILogger<SubscriptionService> _logger;
     private readonly AppSettings _appSettings;
-    private readonly List<VpnConnection> _vpnConnections = new();
+    private readonly List<VpnConnectionOld> _vpnConnections = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private DateTime? _expiration;
-    
-    public SubscriptionService(IOptions<AppSettings> options)
+    private readonly JsonSerializerOptions _jsonSerializerOptions = new ()
     {
+        PropertyNameCaseInsensitive = true
+    };
+    
+    public SubscriptionService(IOptions<AppSettings> options, ILogger<SubscriptionService> logger)
+    {
+        _logger = logger;
         _appSettings = options.Value;
     }
     
@@ -43,11 +49,27 @@ public class SubscriptionService : ISubscriptionService
             
             var fileContent = await File.ReadAllTextAsync(_appSettings.SubscriptionStorageDiscoveryPath);
             
-            _vpnConnections.Clear();
-            _vpnConnections.AddRange(JsonSerializer.Deserialize<IEnumerable<VpnConnection>>(fileContent, new JsonSerializerOptions
+            var connections = Enumerable.Empty<VpnConnectionOld>();
+
+            try
             {
-                PropertyNameCaseInsensitive = true
-            })!);
+                var deserializedConnections =
+                    JsonSerializer.Deserialize<List<VpnConnectionNew>>(fileContent, _jsonSerializerOptions)!;
+                
+                connections = deserializedConnections.Select(x => new VpnConnectionOld
+                {
+                    ClientId = x.ClientId,
+                    Connections = x.Connections.Select(c => $"{c.ConnectionString}#{c.Title}").ToList(),
+                });
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e, "Failed to load VPN connections");
+                connections = JsonSerializer.Deserialize<List<VpnConnectionOld>>(fileContent, _jsonSerializerOptions);
+            }
+            
+            _vpnConnections.Clear();
+            _vpnConnections.AddRange(connections!);
             
             _expiration = DateTime.UtcNow.AddMinutes(5);
             
