@@ -1,6 +1,6 @@
 namespace VPN.SimpleSub.Web.Models;
 
-public class VpnConnectionNew
+public class VpnConnection
 {
     public required string ClientId { get; init; }
     
