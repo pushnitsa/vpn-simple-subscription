@@ -43,16 +43,22 @@ public class SubscriptionService : ISubscriptionService
     {
         if (_expiration == null || _expiration < DateTime.UtcNow)
         {
-            await _semaphoreSlim.WaitAsync();
-            
-            var fileContent = await File.ReadAllTextAsync(_appSettings.SubscriptionStorageDiscoveryPath);
-            
-            _vpnConnections.Clear();
-            _vpnConnections.AddRange(JsonSerializer.Deserialize<List<VpnConnection>>(fileContent, _jsonSerializerOptions)!);
-            
-            _expiration = DateTime.UtcNow.AddMinutes(5);
-            
-            _semaphoreSlim.Release();
+            try
+            {
+                await _semaphoreSlim.WaitAsync();
+                
+                var fileContent = await File.ReadAllTextAsync(_appSettings.SubscriptionStorageDiscoveryPath);
+                
+                _vpnConnections.Clear();
+                _vpnConnections.AddRange(
+                    JsonSerializer.Deserialize<List<VpnConnection>>(fileContent, _jsonSerializerOptions)!);
+                
+                _expiration = DateTime.UtcNow.AddMinutes(5);
+            }
+            finally
+            {
+                _semaphoreSlim.Release();
+            }
         }
     }
 }
