@@ -17,4 +17,20 @@ app.MapControllerRoute(
     $"{appSettings.SubscriptionRoute}/{{clientId}}/{{action}}", 
     new  { controller = "Subscription" });
 
+app.Use(async (context, next) =>
+{
+    context.Response.OnStarting(() =>
+    {
+        
+        if (context.Response.StatusCode is >= 200 and < 300)
+        {
+            context.Response.Headers.Append("Profile-Update-Interval", "12");
+        }
+        
+        return Task.FromResult(0);
+    });
+    
+    await next();
+});
+
 app.Run();
