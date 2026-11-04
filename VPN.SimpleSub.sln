@@ -3,6 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VPN.SimpleSub.Web", "src\VPN.SimpleSub.Web\VPN.SimpleSub.Web.csproj", "{1CB6D83C-D4B0-43DA-85CD-3107B8F17D07}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{C885ECD7-4AB3-49E5-8108-0EDD08F7620C}"
+	ProjectSection(SolutionItems) = preProject
+		src\subscriptions-example.json = src\subscriptions-example.json
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7657F7A0-72ED-48E0-9FDB-CC3AA0E06A5B}"
 	ProjectSection(SolutionItems) = preProject
