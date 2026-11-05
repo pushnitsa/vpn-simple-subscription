@@ -10,7 +10,7 @@ public class SubscriptionFetcherTests
     private const string ExpectedVless =
         "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=xhttp&security=none#TestNode";
 
-    private static HttpClient CreateMockHttpClient(
+    private static IHttpClientFactory CreateMockHttpClientFactory(
         HttpStatusCode statusCode,
         string content,
         Dictionary<string, string>? headers = null)
@@ -29,7 +29,7 @@ public class SubscriptionFetcherTests
         }
 
         var handler = new MockHttpMessageHandler(response);
-        return new HttpClient(handler);
+        return new MockHttpClientFactory(new HttpClient(handler));
     }
 
     [Fact]
@@ -37,8 +37,8 @@ public class SubscriptionFetcherTests
     {
         // Arrange
         var base64Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(ExpectedVless));
-        var client = CreateMockHttpClient(HttpStatusCode.OK, base64Body);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -51,8 +51,8 @@ public class SubscriptionFetcherTests
     public async Task FetchAsync_ShouldHandlePlainVlessBody_WhenNotBase64()
     {
         // Arrange
-        var client = CreateMockHttpClient(HttpStatusCode.OK, ExpectedVless);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, ExpectedVless);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -70,8 +70,8 @@ public class SubscriptionFetcherTests
         {
             { "Profile-Title", "base64:WFhYMw==" } // Decodes to "XXX3"
         };
-        var client = CreateMockHttpClient(HttpStatusCode.OK, base64Body, headers);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -89,8 +89,8 @@ public class SubscriptionFetcherTests
         {
             { "Profile-Title", "PlainTitle" }
         };
-        var client = CreateMockHttpClient(HttpStatusCode.OK, base64Body, headers);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -108,8 +108,8 @@ public class SubscriptionFetcherTests
         {
             { "Profile-Update-Interval", "12" }
         };
-        var client = CreateMockHttpClient(HttpStatusCode.OK, base64Body, headers);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -128,8 +128,8 @@ public class SubscriptionFetcherTests
         {
             { "Subscription-Userinfo", expectedUserInfo }
         };
-        var client = CreateMockHttpClient(HttpStatusCode.OK, base64Body, headers);
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act
         var result = await fetcher.FetchAsync(SubUrl, TestContext.Current.CancellationToken);
@@ -142,8 +142,8 @@ public class SubscriptionFetcherTests
     public async Task FetchAsync_ShouldThrowHttpRequestException_WhenResponseStatusIsNotSuccessful()
     {
         // Arrange
-        var client = CreateMockHttpClient(HttpStatusCode.NotFound, "Not Found");
-        var fetcher = new SubscriptionFetcher(client);
+        var factory = CreateMockHttpClientFactory(HttpStatusCode.NotFound, "Not Found");
+        var fetcher = new SubscriptionFetcher(factory);
 
         // Act & Assert
         await Assert.ThrowsAsync<HttpRequestException>(() =>
@@ -156,11 +156,16 @@ public class SubscriptionFetcherTests
     public async Task FetchAsync_ShouldThrowArgumentException_WhenUrlIsInvalid(string invalidUrl)
     {
         // Arrange
-        var fetcher = new SubscriptionFetcher();
+        var fetcher = new SubscriptionFetcher(new MockHttpClientFactory(new HttpClient()));
 
         // Act & Assert
         await Assert.ThrowsAsync<ArgumentException>(() =>
             fetcher.FetchAsync(invalidUrl, TestContext.Current.CancellationToken));
+    }
+
+    private sealed class MockHttpClientFactory(HttpClient client) : IHttpClientFactory
+    {
+        public HttpClient CreateClient(string name) => client;
     }
 
     private class MockHttpMessageHandler(HttpResponseMessage response) : HttpMessageHandler

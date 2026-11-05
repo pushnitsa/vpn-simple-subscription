@@ -8,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.Configure<AppSettings>(builder.Configuration);
 
 builder.Services.AddControllers();
+builder.Services.AddHttpClient();
+builder.Services.AddSingleton<IUriEditor, VlessConfigEditor>();
+builder.Services.AddSingleton<ISubscriptionFetcher, SubscriptionFetcher>();
 builder.Services.AddSingleton<ISubscriptionService, SubscriptionService>();
 
 var app = builder.Build();
