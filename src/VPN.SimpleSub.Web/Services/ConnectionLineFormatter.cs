@@ -4,11 +4,14 @@ public static class ConnectionLineFormatter
 {
     public static string Format(string connectionString, string? title)
     {
-        if (string.IsNullOrWhiteSpace(title) || connectionString.Contains('#'))
+        if (string.IsNullOrWhiteSpace(title))
         {
             return connectionString;
         }
 
-        return $"{connectionString}#{title}";
+        var hashIndex = connectionString.IndexOf('#');
+        var baseUri = hashIndex >= 0 ? connectionString[..hashIndex] : connectionString;
+
+        return $"{baseUri}#{title}";
     }
 }

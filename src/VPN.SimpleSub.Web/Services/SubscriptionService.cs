@@ -7,7 +7,7 @@ namespace VPN.SimpleSub.Web.Services;
 
 public class SubscriptionService(
     IOptions<AppSettings> options,
-    IEnumerable<IConnectionEngine> engines) : ISubscriptionService
+    IEnumerable<ISubscriptionEngine> engines) : ISubscriptionService
 {
     private readonly List<VpnConnection> _vpnConnections = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
@@ -27,21 +27,13 @@ public class SubscriptionService(
             return null;
         }
 
-        var lines = new List<string>();
-
-        foreach (var connection in result.Connections)
+        var engine = engines.FirstOrDefault(e => e.CanHandle(result.Engine));
+        if (engine == null)
         {
-            var engine = engines.FirstOrDefault(e => e.CanHandle(connection.Engine));
-            if (engine != null)
-            {
-                var line = await engine.ResolveAsync(connection);
-                if (!string.IsNullOrWhiteSpace(line))
-                {
-                    lines.Add(line);
-                }
-            }
+            return null;
         }
 
+        var lines = await engine.ResolveConfigsAsync(result);
         if (lines.Count == 0)
         {
             return null;

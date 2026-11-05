@@ -11,8 +11,8 @@ builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IUriEditor, VlessConfigEditor>();
 builder.Services.AddSingleton<ISubscriptionFetcher, SubscriptionFetcher>();
-builder.Services.AddSingleton<IConnectionEngine, StaticConnectionEngine>();
-builder.Services.AddSingleton<IConnectionEngine, FetchConnectionEngine>();
+builder.Services.AddSingleton<ISubscriptionEngine, StaticSubscriptionEngine>();
+builder.Services.AddSingleton<ISubscriptionEngine, FetchSubscriptionEngine>();
 builder.Services.AddSingleton<ISubscriptionService, SubscriptionService>();
 
 var app = builder.Build();

@@ -18,30 +18,38 @@ public class SubscriptionFetcher(IHttpClientFactory httpClientFactory) : ISubscr
 
         var content = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
 
-        var vlessConfig = ResolveVlessConfig(content);
+        var vlessConfigs = ResolveVlessConfigs(content);
         var profileTitle = ParseProfileTitle(GetHeaderValue(response, "Profile-Title"));
         var updateInterval = ParseUpdateInterval(GetHeaderValue(response, "Profile-Update-Interval"));
         var userInfo = GetHeaderValue(response, "Subscription-Userinfo");
 
-        return new SubscriptionResult(vlessConfig, profileTitle, updateInterval, userInfo);
+        return new SubscriptionResult(vlessConfigs, profileTitle, updateInterval, userInfo);
     }
 
-    private static string ResolveVlessConfig(string content)
+    private static IReadOnlyList<string> ResolveVlessConfigs(string content)
     {
+        string rawText;
+
         if (content.StartsWith("vless://", StringComparison.OrdinalIgnoreCase))
         {
-            return content;
+            rawText = content;
+        }
+        else
+        {
+            try
+            {
+                var bytes = Convert.FromBase64String(content);
+                rawText = Encoding.UTF8.GetString(bytes).Trim();
+            }
+            catch (FormatException)
+            {
+                rawText = content;
+            }
         }
 
-        try
-        {
-            var bytes = Convert.FromBase64String(content);
-            return Encoding.UTF8.GetString(bytes).Trim();
-        }
-        catch (FormatException)
-        {
-            return content;
-        }
+        return rawText
+            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToList();
     }
 
     private static string? ParseProfileTitle(string? rawTitle)
