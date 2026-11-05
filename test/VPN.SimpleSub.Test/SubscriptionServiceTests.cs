@@ -38,7 +38,7 @@ public class SubscriptionServiceTests : IDisposable
 
         return new SubscriptionService(
             options,
-            engines ?? [new StaticConnectionEngine()]);
+            engines ?? [new StaticConnectionEngine(new FakeUriEditor())]);
     }
 
     [Fact]
@@ -142,7 +142,7 @@ public class SubscriptionServiceTests : IDisposable
 
         var engines = new IConnectionEngine[]
         {
-            new StaticConnectionEngine(),
+            new StaticConnectionEngine(new FakeUriEditor()),
             new FakeEngine("fetch", "vless://fetch-node#Remote Node")
         };
         var service = CreateService(connections, engines);
@@ -179,5 +179,25 @@ public class SubscriptionServiceTests : IDisposable
 
         public Task<string?> ResolveAsync(VpnConnectionDetails connection, CancellationToken cancellationToken = default) =>
             Task.FromResult<string?>(resolvedLine);
+    }
+
+    private class FakeUriEditor : IUriEditor
+    {
+        public string SetHostAndPort(string uri, string? host = null, int? port = null)
+        {
+            var builder = new UriBuilder(uri);
+            if (!string.IsNullOrWhiteSpace(host))
+            {
+                builder.Host = host;
+            }
+            if (port.HasValue)
+            {
+                builder.Port = port.Value;
+            }
+            return builder.Uri.ToString();
+        }
+
+        public string SetQueryParameter(string uri, string key, string value) => uri;
+        public string RemoveQueryParameter(string uri, string key) => uri;
     }
 }

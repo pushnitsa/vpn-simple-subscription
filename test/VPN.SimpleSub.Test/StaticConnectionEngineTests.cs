@@ -5,7 +5,7 @@ namespace VPN.SimpleSub.Test;
 
 public class StaticConnectionEngineTests
 {
-    private readonly StaticConnectionEngine _engine = new();
+    private readonly StaticConnectionEngine _engine = new(new FakeUriEditor());
 
     [Theory]
     [InlineData(null)]
@@ -40,6 +40,39 @@ public class StaticConnectionEngineTests
     }
 
     [Fact]
+    public async Task ResolveAsync_ShouldUpdateHostAndPort_WhenSpecified()
+    {
+        var connection = new VpnConnectionDetails
+        {
+            ConnectionString = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp",
+            Host = "custom.example.com",
+            Port = 8443,
+            Title = "Updated Node"
+        };
+
+        var result = await _engine.ResolveAsync(connection, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Contains("custom.example.com:8443", result);
+        Assert.Contains("#Updated Node", result);
+    }
+
+    [Fact]
+    public async Task ResolveAsync_ShouldUpdatePortOnly_WhenHostNotSpecified()
+    {
+        var connection = new VpnConnectionDetails
+        {
+            ConnectionString = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp",
+            Port = 9443
+        };
+
+        var result = await _engine.ResolveAsync(connection, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.Contains("example.com:9443", result);
+    }
+
+    [Fact]
     public async Task ResolveAsync_ShouldPreserveExistingFragment_WhenConnectionStringContainsHash()
     {
         var connection = new VpnConnectionDetails
@@ -67,5 +100,25 @@ public class StaticConnectionEngineTests
         var result = await _engine.ResolveAsync(connection, TestContext.Current.CancellationToken);
 
         Assert.Null(result);
+    }
+
+    private class FakeUriEditor : IUriEditor
+    {
+        public string SetHostAndPort(string uri, string? host = null, int? port = null)
+        {
+            var builder = new UriBuilder(uri);
+            if (!string.IsNullOrWhiteSpace(host))
+            {
+                builder.Host = host;
+            }
+            if (port.HasValue)
+            {
+                builder.Port = port.Value;
+            }
+            return builder.Uri.ToString();
+        }
+
+        public string SetQueryParameter(string uri, string key, string value) => uri;
+        public string RemoveQueryParameter(string uri, string key) => uri;
     }
 }
