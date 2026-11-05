@@ -48,3 +48,6 @@ Follow the Karpathy guidelines:
 - **Preview Changes**: Always display file paths and unified diffs/code blocks in chat before applying file edits or writes.
 - **Command Confirmation**: Display exact commands and rationales before running terminal operations.
 - **Verification**: Run `dotnet build` and `dotnet test` to verify changes prior to concluding tasks.
+
+## 7. Documentation Maintenance
+- **Update Architecture Documentation**: Whenever the system design, architecture, service interfaces, or configuration schemas are changed or refactored, always update `docs/Architecture.md` to reflect the latest design before completing the task.
