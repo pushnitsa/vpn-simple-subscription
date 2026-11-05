@@ -115,13 +115,13 @@ The storage file contains a JSON array of client subscription objects. A client 
   "subscriptionUrl": "https://example.com:8802/sub/test123",
   "overrides": [
     {
-      "matchSni": "topicboard.app",
+      "matchSni": "sni.example.com",
       "title": "Reality CDN Node",
       "host": "reality-proxy.example.com",
       "port": 443
     },
     {
-      "matchHost": "ad.small-biz.org",
+      "matchHost": "node1.example.com",
       "title": "Plain XHTTP Node",
       "host": "plain-proxy.example.com",
       "port": 443

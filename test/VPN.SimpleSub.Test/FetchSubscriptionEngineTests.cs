@@ -7,10 +7,10 @@ namespace VPN.SimpleSub.Test;
 public class FetchSubscriptionEngineTests
 {
     private const string Node1Plain =
-        "vless://00000000-0000-0000-0000-000000000000@ad.small-biz.org:20001?type=xhttp&security=none#OriginalNode1";
+        "vless://00000000-0000-0000-0000-000000000000@node1.example.com:20001?type=xhttp&security=none#OriginalNode1";
 
     private const string Node2Reality =
-        "vless://11111111-1111-1111-1111-111111111111@194.182.84.231:30001?type=xhttp&security=reality&sni=topicboard.app#OriginalNode2";
+        "vless://11111111-1111-1111-1111-111111111111@198.51.100.1:30001?type=xhttp&security=reality&sni=sni.example.com#OriginalNode2";
 
     [Theory]
     [InlineData("fetch")]
@@ -49,14 +49,14 @@ public class FetchSubscriptionEngineTests
             [
                 new VpnConnectionOverride
                 {
-                    MatchSni = "topicboard.app",
+                    MatchSni = "sni.example.com",
                     Title = "Reality Fast",
                     Host = "reality.proxy.com",
                     Port = 443
                 },
                 new VpnConnectionOverride
                 {
-                    MatchHost = "ad.small-biz.org",
+                    MatchHost = "node1.example.com",
                     Title = "Plain CDN",
                     Host = "cdn.proxy.com",
                     Port = 8443
@@ -75,7 +75,7 @@ public class FetchSubscriptionEngineTests
         // Node 2 was matched by MatchSni
         Assert.Contains("reality.proxy.com:443", result.Configs[1]);
         Assert.Contains("#Reality Fast", result.Configs[1]);
-        Assert.Contains("sni=topicboard.app", result.Configs[1]); // SNI untouched
+        Assert.Contains("sni=sni.example.com", result.Configs[1]); // SNI untouched
     }
 
     [Fact]

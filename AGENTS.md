@@ -24,6 +24,9 @@ Follow the Karpathy guidelines:
 ## 4. Secret & Credential Protection
 - **Protect VPN Credentials**: The `subscriptions.json` file and `.env` files contain sensitive connection URIs (e.g., UUIDs, private keys, server IPs). **Never** inspect, read, or print these files in logs or chat responses.
 - **Sanitized Fixtures for Testing**: Always use sanitized mock data (e.g. dummy domains like `example.com` and placeholder UUIDs) when writing tests or documentation.
+- **No Real Infrastructure Data in Code, Tests, or Documentation**:
+  - Never use real hostnames, public IP addresses, real domain names, or subscription URLs provided in user prompts or external endpoints in tests, example configuration files, or documentation.
+  - Exclusively use RFC 2606 / RFC 6761 reserved domains (`*.example.com`, `*.example.org`), RFC 5737 documentation IP ranges (`192.0.2.0/24`, `198.51.100.0/24`, `203.0.113.0/24`), RFC 3849 IPv6 (`2001:db8::/32`), and RFC 4122 nil/placeholder UUIDs (`00000000-0000-0000-0000-000000000000`).
 - **Configuration Hygiene**: Do not commit actual secrets to `appsettings*.json` or source control.
 
 ## 5. Build, Test & Run Commands
