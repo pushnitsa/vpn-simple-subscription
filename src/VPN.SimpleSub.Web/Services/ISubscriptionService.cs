@@ -1,6 +1,8 @@
+using VPN.SimpleSub.Web.Models;
+
 namespace VPN.SimpleSub.Web.Services;
 
 public interface ISubscriptionService
 {
-    Task<string?> GetSubscriptionAsync(string clientId);
+    Task<SubscriptionResponse?> GetSubscriptionAsync(string clientId);
 }

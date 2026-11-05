@@ -1,3 +1,4 @@
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
 using VPN.SimpleSub.Web.Services;
 
@@ -50,10 +51,13 @@ public class StaticSubscriptionEngineTests
 
         var result = await _engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, result.Count);
-        Assert.Equal("vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp#Node 1", result[0]);
-        Assert.Contains("custom.example.com:8443", result[1]);
-        Assert.Contains("#Node 2", result[1]);
+        Assert.Equal(2, result.Configs.Count);
+        Assert.Equal("vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp#Node 1", result.Configs[0]);
+        Assert.Contains("custom.example.com:8443", result.Configs[1]);
+        Assert.Contains("#Node 2", result.Configs[1]);
+        Assert.NotNull(result.Headers);
+        Assert.Equal(SubscriptionHeaders.DefaultUpdateInterval, result.Headers[SubscriptionHeaders.UpdateInterval]);
+        Assert.False(result.Headers.ContainsKey(SubscriptionHeaders.UserInfo));
     }
 
     [Fact]
@@ -72,7 +76,7 @@ public class StaticSubscriptionEngineTests
 
         var result = await _engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Empty(result);
+        Assert.Empty(result.Configs);
     }
 
     [Fact]
@@ -86,7 +90,7 @@ public class StaticSubscriptionEngineTests
 
         var result = await _engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Empty(result);
+        Assert.Empty(result.Configs);
     }
 
     private class FakeUriEditor : IUriEditor

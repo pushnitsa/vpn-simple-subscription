@@ -1,5 +1,6 @@
 using System.Net;
 using System.Text;
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Services;
 
 namespace VPN.SimpleSub.Test;
@@ -68,7 +69,7 @@ public class SubscriptionFetcherTests
         var base64Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(ExpectedVless));
         var headers = new Dictionary<string, string>
         {
-            { "Profile-Title", "base64:WFhYMw==" } // Decodes to "XXX3"
+            { SubscriptionHeaders.Title, "base64:WFhYMw==" } // Decodes to "XXX3"
         };
         var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
         var fetcher = new SubscriptionFetcher(factory);
@@ -87,7 +88,7 @@ public class SubscriptionFetcherTests
         var base64Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(ExpectedVless));
         var headers = new Dictionary<string, string>
         {
-            { "Profile-Title", "PlainTitle" }
+            { SubscriptionHeaders.Title, "PlainTitle" }
         };
         var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
         var fetcher = new SubscriptionFetcher(factory);
@@ -106,7 +107,7 @@ public class SubscriptionFetcherTests
         var base64Body = Convert.ToBase64String(Encoding.UTF8.GetBytes(ExpectedVless));
         var headers = new Dictionary<string, string>
         {
-            { "Profile-Update-Interval", "12" }
+            { SubscriptionHeaders.UpdateInterval, "12" }
         };
         var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
         var fetcher = new SubscriptionFetcher(factory);
@@ -126,7 +127,7 @@ public class SubscriptionFetcherTests
         const string expectedUserInfo = "upload=0; download=0; total=0; expire=0";
         var headers = new Dictionary<string, string>
         {
-            { "Subscription-Userinfo", expectedUserInfo }
+            { SubscriptionHeaders.UserInfo, expectedUserInfo }
         };
         var factory = CreateMockHttpClientFactory(HttpStatusCode.OK, base64Body, headers);
         var fetcher = new SubscriptionFetcher(factory);
@@ -136,6 +137,8 @@ public class SubscriptionFetcherTests
 
         // Assert
         Assert.Equal(expectedUserInfo, result.SubscriptionUserInfo);
+        Assert.NotNull(result.Headers);
+        Assert.Equal(expectedUserInfo, result.Headers[SubscriptionHeaders.UserInfo]);
     }
 
     [Fact]

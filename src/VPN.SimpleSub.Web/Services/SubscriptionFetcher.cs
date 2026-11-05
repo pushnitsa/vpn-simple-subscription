@@ -1,4 +1,5 @@
 using System.Text;
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
 
 namespace VPN.SimpleSub.Web.Services;
@@ -19,11 +20,31 @@ public class SubscriptionFetcher(IHttpClientFactory httpClientFactory) : ISubscr
         var content = (await response.Content.ReadAsStringAsync(cancellationToken)).Trim();
 
         var vlessConfigs = ResolveVlessConfigs(content);
-        var profileTitle = ParseProfileTitle(GetHeaderValue(response, "Profile-Title"));
-        var updateInterval = ParseUpdateInterval(GetHeaderValue(response, "Profile-Update-Interval"));
-        var userInfo = GetHeaderValue(response, "Subscription-Userinfo");
+        var profileTitle = ParseProfileTitle(GetHeaderValue(response, SubscriptionHeaders.Title));
+        var updateInterval = ParseUpdateInterval(GetHeaderValue(response, SubscriptionHeaders.UpdateInterval));
+        var userInfo = GetHeaderValue(response, SubscriptionHeaders.UserInfo);
 
-        return new SubscriptionResult(vlessConfigs, profileTitle, updateInterval, userInfo);
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var header in response.Headers)
+        {
+            if (header.Key.StartsWith(SubscriptionHeaders.ProfilePrefix, StringComparison.OrdinalIgnoreCase) ||
+                header.Key.StartsWith(SubscriptionHeaders.SubscriptionPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                headers[header.Key] = string.Join(", ", header.Value);
+            }
+        }
+
+        foreach (var header in response.Content.Headers)
+        {
+            if (header.Key.StartsWith(SubscriptionHeaders.ProfilePrefix, StringComparison.OrdinalIgnoreCase) ||
+                header.Key.StartsWith(SubscriptionHeaders.SubscriptionPrefix, StringComparison.OrdinalIgnoreCase))
+            {
+                headers[header.Key] = string.Join(", ", header.Value);
+            }
+        }
+
+        return new SubscriptionResult(vlessConfigs, profileTitle, updateInterval, userInfo, headers);
     }
 
     private static IReadOnlyList<string> ResolveVlessConfigs(string content)

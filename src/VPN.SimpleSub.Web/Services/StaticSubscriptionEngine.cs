@@ -1,3 +1,4 @@
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
 
 namespace VPN.SimpleSub.Web.Services;
@@ -7,13 +8,13 @@ public class StaticSubscriptionEngine(IUriEditor uriEditor) : ISubscriptionEngin
     public bool CanHandle(string? engine) =>
         string.IsNullOrEmpty(engine) || string.Equals(engine, "static", StringComparison.OrdinalIgnoreCase);
 
-    public Task<List<string>> ResolveConfigsAsync(VpnConnection connection, CancellationToken cancellationToken = default)
+    public Task<EngineSubscriptionResult> ResolveConfigsAsync(VpnConnection connection, CancellationToken cancellationToken = default)
     {
         var result = new List<string>();
 
         if (connection.Connections == null)
         {
-            return Task.FromResult(result);
+            return Task.FromResult(new EngineSubscriptionResult(result));
         }
 
         foreach (var conn in connection.Connections)
@@ -33,6 +34,11 @@ public class StaticSubscriptionEngine(IUriEditor uriEditor) : ISubscriptionEngin
             result.Add(ConnectionLineFormatter.Format(uri, conn.Title));
         }
 
-        return Task.FromResult(result);
+        var headers = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+        {
+            [SubscriptionHeaders.UpdateInterval] = SubscriptionHeaders.DefaultUpdateInterval
+        };
+
+        return Task.FromResult(new EngineSubscriptionResult(result, headers));
     }
 }

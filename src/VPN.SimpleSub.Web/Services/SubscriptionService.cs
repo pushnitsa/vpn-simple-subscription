@@ -17,7 +17,7 @@ public class SubscriptionService(
         PropertyNameCaseInsensitive = true
     };
 
-    public async Task<string?> GetSubscriptionAsync(string clientId)
+    public async Task<SubscriptionResponse?> GetSubscriptionAsync(string clientId)
     {
         await LoadVpnConnectionsAsync();
 
@@ -33,14 +33,17 @@ public class SubscriptionService(
             return null;
         }
 
-        var lines = await engine.ResolveConfigsAsync(result);
-        if (lines.Count == 0)
+        var engineResult = await engine.ResolveConfigsAsync(result);
+        if (engineResult.Configs.Count == 0)
         {
             return null;
         }
 
-        var joinedString = string.Join('\n', lines);
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes(joinedString));
+        var joinedString = string.Join('\n', engineResult.Configs);
+        var base64 = Convert.ToBase64String(Encoding.UTF8.GetBytes(joinedString));
+        var headers = engineResult.Headers ?? new Dictionary<string, string>();
+
+        return new SubscriptionResponse(base64, headers);
     }
 
     private async Task LoadVpnConnectionsAsync()

@@ -1,6 +1,7 @@
 using System.Text;
 using System.Text.Json;
 using Microsoft.Extensions.Options;
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
 using VPN.SimpleSub.Web.Services;
 
@@ -70,15 +71,17 @@ public class SubscriptionServiceTests : IDisposable
         var service = CreateService(connections);
 
         // Act
-        var base64Result = await service.GetSubscriptionAsync("client1");
+        var result = await service.GetSubscriptionAsync("client1");
 
         // Assert
-        Assert.NotNull(base64Result);
-        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(base64Result));
+        Assert.NotNull(result);
+        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(result.Content));
         var lines = decoded.Split('\n');
         Assert.Equal(2, lines.Length);
         Assert.Equal("vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp#Node 1", lines[0]);
         Assert.Equal("vless://11111111-1111-1111-1111-111111111111@example.com:443?type=ws#Node 2", lines[1]);
+        Assert.True(result.Headers.ContainsKey(SubscriptionHeaders.UpdateInterval));
+        Assert.Equal(SubscriptionHeaders.DefaultUpdateInterval, result.Headers[SubscriptionHeaders.UpdateInterval]);
     }
 
     [Fact]
@@ -95,19 +98,26 @@ public class SubscriptionServiceTests : IDisposable
             }
         };
 
-        var fakeEngine = new FakeEngine("fetch", ["vless://resolved-node-1#Test1", "vless://resolved-node-2#Test2"]);
+        var headers = new Dictionary<string, string>
+        {
+            [SubscriptionHeaders.UserInfo] = "upload=100; download=200; total=1000; expire=0",
+            [SubscriptionHeaders.UpdateInterval] = "24"
+        };
+        var fakeEngine = new FakeEngine("fetch", ["vless://resolved-node-1#Test1", "vless://resolved-node-2#Test2"], headers);
         var service = CreateService(connections, [fakeEngine]);
 
         // Act
-        var base64Result = await service.GetSubscriptionAsync("client2");
+        var result = await service.GetSubscriptionAsync("client2");
 
         // Assert
-        Assert.NotNull(base64Result);
-        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(base64Result));
+        Assert.NotNull(result);
+        var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(result.Content));
         var lines = decoded.Split('\n');
         Assert.Equal(2, lines.Length);
         Assert.Equal("vless://resolved-node-1#Test1", lines[0]);
         Assert.Equal("vless://resolved-node-2#Test2", lines[1]);
+        Assert.Equal("upload=100; download=200; total=1000; expire=0", result.Headers[SubscriptionHeaders.UserInfo]);
+        Assert.Equal("24", result.Headers[SubscriptionHeaders.UpdateInterval]);
     }
 
     [Fact]
@@ -123,13 +133,13 @@ public class SubscriptionServiceTests : IDisposable
         Assert.Null(result);
     }
 
-    private class FakeEngine(string engineName, List<string> resolvedLines) : ISubscriptionEngine
+    private class FakeEngine(string engineName, List<string> resolvedLines, Dictionary<string, string>? headers = null) : ISubscriptionEngine
     {
         public bool CanHandle(string? engine) =>
             string.Equals(engine, engineName, StringComparison.OrdinalIgnoreCase);
 
-        public Task<List<string>> ResolveConfigsAsync(VpnConnection connection, CancellationToken cancellationToken = default) =>
-            Task.FromResult(resolvedLines);
+        public Task<EngineSubscriptionResult> ResolveConfigsAsync(VpnConnection connection, CancellationToken cancellationToken = default) =>
+            Task.FromResult(new EngineSubscriptionResult(resolvedLines, headers));
     }
 
     private class FakeUriEditor : IUriEditor

@@ -1,3 +1,4 @@
+using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
 using VPN.SimpleSub.Web.Services;
 
@@ -65,16 +66,16 @@ public class FetchSubscriptionEngineTests
 
         var result = await engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Configs.Count);
 
         // Node 1 was matched by MatchHost
-        Assert.Contains("cdn.proxy.com:8443", result[0]);
-        Assert.Contains("#Plain CDN", result[0]);
+        Assert.Contains("cdn.proxy.com:8443", result.Configs[0]);
+        Assert.Contains("#Plain CDN", result.Configs[0]);
 
         // Node 2 was matched by MatchSni
-        Assert.Contains("reality.proxy.com:443", result[1]);
-        Assert.Contains("#Reality Fast", result[1]);
-        Assert.Contains("sni=topicboard.app", result[1]); // SNI untouched
+        Assert.Contains("reality.proxy.com:443", result.Configs[1]);
+        Assert.Contains("#Reality Fast", result.Configs[1]);
+        Assert.Contains("sni=topicboard.app", result.Configs[1]); // SNI untouched
     }
 
     [Fact]
@@ -101,10 +102,62 @@ public class FetchSubscriptionEngineTests
 
         var result = await engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Equal(2, result.Count);
+        Assert.Equal(2, result.Configs.Count);
         // Original fragments preserved since no overrides matched
-        Assert.Equal(Node1Plain, result[0]);
-        Assert.Equal(Node2Reality, result[1]);
+        Assert.Equal(Node1Plain, result.Configs[0]);
+        Assert.Equal(Node2Reality, result.Configs[1]);
+    }
+
+    [Fact]
+    public async Task ResolveConfigsAsync_ShouldForwardHeaders_AndApplyFallbackInterval()
+    {
+        var headers = new Dictionary<string, string>
+        {
+            [SubscriptionHeaders.UserInfo] = "upload=1000; download=2000; total=50000; expire=1735689600",
+            [SubscriptionHeaders.Title] = "base64:VGVzdFRpdGxl"
+        };
+        var fakeFetcher = new FakeFetcher(url => new SubscriptionResult([Node1Plain], Headers: headers));
+        var fakeEditor = new FakeUriEditor();
+        var engine = new FetchSubscriptionEngine(fakeFetcher, fakeEditor);
+
+        var client = new VpnConnection
+        {
+            ClientId = "test",
+            Engine = "fetch",
+            SubscriptionUrl = "https://example.com/sub/test"
+        };
+
+        var result = await engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result.Headers);
+        Assert.Equal("upload=1000; download=2000; total=50000; expire=1735689600", result.Headers[SubscriptionHeaders.UserInfo]);
+        Assert.Equal("base64:VGVzdFRpdGxl", result.Headers[SubscriptionHeaders.Title]);
+        Assert.Equal(SubscriptionHeaders.DefaultUpdateInterval, result.Headers[SubscriptionHeaders.UpdateInterval]); // Fallback applied
+    }
+
+    [Fact]
+    public async Task ResolveConfigsAsync_ShouldPreserveUpstreamUpdateInterval_WhenProvided()
+    {
+        var headers = new Dictionary<string, string>
+        {
+            [SubscriptionHeaders.UserInfo] = "upload=0; download=0; total=0; expire=0",
+            [SubscriptionHeaders.UpdateInterval] = "6"
+        };
+        var fakeFetcher = new FakeFetcher(url => new SubscriptionResult([Node1Plain], Headers: headers));
+        var fakeEditor = new FakeUriEditor();
+        var engine = new FetchSubscriptionEngine(fakeFetcher, fakeEditor);
+
+        var client = new VpnConnection
+        {
+            ClientId = "test",
+            Engine = "fetch",
+            SubscriptionUrl = "https://example.com/sub/test"
+        };
+
+        var result = await engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result.Headers);
+        Assert.Equal("6", result.Headers[SubscriptionHeaders.UpdateInterval]);
     }
 
     [Theory]
@@ -124,7 +177,7 @@ public class FetchSubscriptionEngineTests
 
         var result = await engine.ResolveConfigsAsync(client, TestContext.Current.CancellationToken);
 
-        Assert.Empty(result);
+        Assert.Empty(result.Configs);
     }
 
     private class FakeFetcher(Func<string, SubscriptionResult>? handler = null) : ISubscriptionFetcher

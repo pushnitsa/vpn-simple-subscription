@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Options;
-using VPN.SimpleSub.Web.Middleware;
 using VPN.SimpleSub.Web.Models;
 using VPN.SimpleSub.Web.Services;
 
@@ -22,7 +21,5 @@ app.MapControllerRoute(
     "subsController", 
     $"{appSettings.SubscriptionRoute}/{{clientId}}/{{action}}", 
     new  { controller = "Subscription" });
-
-app.UseMiddleware<CustomHeadersMiddleware>();
 
 app.Run();

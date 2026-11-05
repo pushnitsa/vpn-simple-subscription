@@ -11,14 +11,17 @@ public class SubscriptionController(ISubscriptionService subscriptionService, IL
     {
         var result = await subscriptionService.GetSubscriptionAsync(clientId);
         
-        if (string.IsNullOrEmpty(result))
+        if (result == null || string.IsNullOrEmpty(result.Content))
         {
             logger.LogDebug("Subscription not found");
             return NotFound();
         }
-        else
+
+        foreach (var (key, value) in result.Headers)
         {
-            return Ok(result);
+            Response.Headers[key] = value;
         }
+
+        return Ok(result.Content);
     }
 }
