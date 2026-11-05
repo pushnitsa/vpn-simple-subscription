@@ -7,8 +7,7 @@ namespace VPN.SimpleSub.Web.Services;
 
 public class SubscriptionService(
     IOptions<AppSettings> options,
-    ISubscriptionFetcher subscriptionFetcher,
-    IUriEditor uriEditor) : ISubscriptionService
+    IEnumerable<IConnectionEngine> engines) : ISubscriptionService
 {
     private readonly List<VpnConnection> _vpnConnections = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
@@ -23,7 +22,6 @@ public class SubscriptionService(
         await LoadVpnConnectionsAsync();
 
         var result = _vpnConnections.FirstOrDefault(x => x.ClientId == clientId);
-
         if (result == null)
         {
             return null;
@@ -33,10 +31,14 @@ public class SubscriptionService(
 
         foreach (var connection in result.Connections)
         {
-            var line = await ResolveConnectionLineAsync(connection);
-            if (!string.IsNullOrWhiteSpace(line))
+            var engine = engines.FirstOrDefault(e => e.CanHandle(connection.Engine));
+            if (engine != null)
             {
-                lines.Add(line);
+                var line = await engine.ResolveAsync(connection);
+                if (!string.IsNullOrWhiteSpace(line))
+                {
+                    lines.Add(line);
+                }
             }
         }
 
@@ -47,53 +49,6 @@ public class SubscriptionService(
 
         var joinedString = string.Join('\n', lines);
         return Convert.ToBase64String(Encoding.UTF8.GetBytes(joinedString));
-    }
-
-    private async Task<string?> ResolveConnectionLineAsync(VpnConnectionDetails connection)
-    {
-        if (string.Equals(connection.Engine, "fetch", StringComparison.OrdinalIgnoreCase))
-        {
-            if (string.IsNullOrWhiteSpace(connection.SubscriptionUrl))
-            {
-                return null;
-            }
-
-            var fetchResult = await subscriptionFetcher.FetchAsync(connection.SubscriptionUrl);
-            var vlessUri = fetchResult.VlessConfig;
-
-            if (!string.IsNullOrWhiteSpace(connection.Host))
-            {
-                vlessUri = uriEditor.SetHostAndPort(vlessUri, connection.Host, connection.Port);
-            }
-
-            var title = connection.Title ?? fetchResult.ProfileTitle;
-            return FormatConnectionLine(vlessUri, title);
-        }
-        else
-        {
-            // Default: Static engine
-            if (string.IsNullOrWhiteSpace(connection.ConnectionString))
-            {
-                return null;
-            }
-
-            return FormatConnectionLine(connection.ConnectionString, connection.Title);
-        }
-    }
-
-    private static string FormatConnectionLine(string connectionString, string? title)
-    {
-        if (string.IsNullOrWhiteSpace(title))
-        {
-            return connectionString;
-        }
-
-        if (connectionString.Contains('#'))
-        {
-            return connectionString;
-        }
-
-        return $"{connectionString}#{title}";
     }
 
     private async Task LoadVpnConnectionsAsync()

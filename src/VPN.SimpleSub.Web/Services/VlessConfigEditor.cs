@@ -2,7 +2,7 @@ namespace VPN.SimpleSub.Web.Services;
 
 public class VlessConfigEditor : IUriEditor
 {
-    public string SetHostAndPort(string uri, string host, int? port = null)
+    public string SetHostAndPort(string uri, string? host = null, int? port = null)
     {
         throw new NotImplementedException();
     }

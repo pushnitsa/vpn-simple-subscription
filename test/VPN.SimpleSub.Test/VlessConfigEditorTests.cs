@@ -38,6 +38,20 @@ public class VlessConfigEditorTests
         Assert.Equal("#TestNode", uri.Fragment);
     }
 
+    [Fact]
+    public void SetHostAndPort_ShouldUpdatePortOnly_WhenHostIsNotSpecified()
+    {
+        // Act
+        var result = _editor.SetHostAndPort(BaseVlessUri, port: 8443);
+
+        // Assert
+        var uri = new Uri(result);
+        Assert.Equal("old.example.com", uri.Host);
+        Assert.Equal(8443, uri.Port);
+        Assert.Equal("00000000-0000-0000-0000-000000000000", uri.UserInfo);
+        Assert.Equal("#TestNode", uri.Fragment);
+    }
+
     [Theory]
     [InlineData("")]
     [InlineData("   ")]

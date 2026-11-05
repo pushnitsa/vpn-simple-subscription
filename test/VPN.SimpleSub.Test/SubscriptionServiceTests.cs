@@ -25,8 +25,7 @@ public class SubscriptionServiceTests : IDisposable
 
     private SubscriptionService CreateService(
         List<VpnConnection> connections,
-        ISubscriptionFetcher? fetcher = null,
-        IUriEditor? uriEditor = null)
+        IEnumerable<IConnectionEngine>? engines = null)
     {
         var json = JsonSerializer.Serialize(connections);
         File.WriteAllText(_tempFilePath, json);
@@ -39,8 +38,7 @@ public class SubscriptionServiceTests : IDisposable
 
         return new SubscriptionService(
             options,
-            fetcher ?? new FakeSubscriptionFetcher(),
-            uriEditor ?? new FakeUriEditor());
+            engines ?? [new StaticConnectionEngine()]);
     }
 
     [Fact]
@@ -85,10 +83,9 @@ public class SubscriptionServiceTests : IDisposable
     }
 
     [Fact]
-    public async Task GetSubscriptionAsync_ShouldFetchAndApplyHostOverride_ForFetchEngine()
+    public async Task GetSubscriptionAsync_ShouldDelegateToMatchingEngine_ForFetchEngine()
     {
         // Arrange
-        const string upstreamVless = "vless://22222222-2222-2222-2222-222222222222@upstream.com:8443?type=xhttp";
         var connections = new List<VpnConnection>
         {
             new()
@@ -99,18 +96,14 @@ public class SubscriptionServiceTests : IDisposable
                     new VpnConnectionDetails
                     {
                         Engine = "fetch",
-                        Title = "Dynamic Node",
-                        SubscriptionUrl = "https://upstream.example.com/sub/test",
-                        Host = "cdn.example.com",
-                        Port = 443
+                        SubscriptionUrl = "https://example.com/sub/test"
                     }
                 ]
             }
         };
 
-        var fakeFetcher = new FakeSubscriptionFetcher(url => new SubscriptionResult(upstreamVless));
-        var fakeEditor = new FakeUriEditor();
-        var service = CreateService(connections, fakeFetcher, fakeEditor);
+        var fakeEngine = new FakeEngine("fetch", "vless://resolved-config#Test");
+        var service = CreateService(connections, [fakeEngine]);
 
         // Act
         var base64Result = await service.GetSubscriptionAsync("client2");
@@ -118,15 +111,13 @@ public class SubscriptionServiceTests : IDisposable
         // Assert
         Assert.NotNull(base64Result);
         var decoded = Encoding.UTF8.GetString(Convert.FromBase64String(base64Result));
-        Assert.Contains("cdn.example.com:443", decoded);
-        Assert.Contains("#Dynamic Node", decoded);
+        Assert.Equal("vless://resolved-config#Test", decoded);
     }
 
     [Fact]
-    public async Task GetSubscriptionAsync_ShouldHandleHybridConnections_MixingStaticAndFetch()
+    public async Task GetSubscriptionAsync_ShouldHandleHybridConnections_MixingEngines()
     {
         // Arrange
-        const string upstreamVless = "vless://33333333-3333-3333-3333-333333333333@upstream.com:443?type=xhttp";
         var connections = new List<VpnConnection>
         {
             new()
@@ -143,18 +134,18 @@ public class SubscriptionServiceTests : IDisposable
                     new VpnConnectionDetails
                     {
                         Engine = "fetch",
-                        Title = "Remote Node",
-                        SubscriptionUrl = "https://upstream.example.com/sub/hybrid",
-                        Host = "proxy.example.com",
-                        Port = 8443
+                        SubscriptionUrl = "https://example.com/sub/hybrid"
                     }
                 ]
             }
         };
 
-        var fakeFetcher = new FakeSubscriptionFetcher(url => new SubscriptionResult(upstreamVless));
-        var fakeEditor = new FakeUriEditor();
-        var service = CreateService(connections, fakeFetcher, fakeEditor);
+        var engines = new IConnectionEngine[]
+        {
+            new StaticConnectionEngine(),
+            new FakeEngine("fetch", "vless://fetch-node#Remote Node")
+        };
+        var service = CreateService(connections, engines);
 
         // Act
         var base64Result = await service.GetSubscriptionAsync("hybrid-client");
@@ -165,8 +156,7 @@ public class SubscriptionServiceTests : IDisposable
         var lines = decoded.Split('\n');
         Assert.Equal(2, lines.Length);
         Assert.Equal("vless://00000000-0000-0000-0000-000000000000@static.com:443?type=tcp#Static Node", lines[0]);
-        Assert.Contains("proxy.example.com:8443", lines[1]);
-        Assert.Contains("type=xhttp#Remote Node", lines[1]);
+        Assert.Equal("vless://fetch-node#Remote Node", lines[1]);
     }
 
     [Fact]
@@ -182,36 +172,12 @@ public class SubscriptionServiceTests : IDisposable
         Assert.Null(result);
     }
 
-    private class FakeSubscriptionFetcher(Func<string, SubscriptionResult>? handler = null) : ISubscriptionFetcher
+    private class FakeEngine(string engineName, string resolvedLine) : IConnectionEngine
     {
-        public Task<SubscriptionResult> FetchAsync(string subscriptionUrl, CancellationToken cancellationToken = default)
-        {
-            if (handler != null)
-            {
-                return Task.FromResult(handler(subscriptionUrl));
-            }
+        public bool CanHandle(string? engine) =>
+            string.Equals(engine, engineName, StringComparison.OrdinalIgnoreCase);
 
-            return Task.FromResult(new SubscriptionResult("vless://00000000-0000-0000-0000-000000000000@example.com:443"));
-        }
-    }
-
-    private class FakeUriEditor : IUriEditor
-    {
-        public string SetHostAndPort(string uri, string host, int? port = null)
-        {
-            var builder = new UriBuilder(uri)
-            {
-                Host = host
-            };
-            if (port.HasValue)
-            {
-                builder.Port = port.Value;
-            }
-            return builder.Uri.ToString();
-        }
-
-        public string SetQueryParameter(string uri, string key, string value) => uri;
-
-        public string RemoveQueryParameter(string uri, string key) => uri;
+        public Task<string?> ResolveAsync(VpnConnectionDetails connection, CancellationToken cancellationToken = default) =>
+            Task.FromResult<string?>(resolvedLine);
     }
 }
