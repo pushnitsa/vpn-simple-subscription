@@ -4,7 +4,7 @@ namespace VPN.SimpleSub.Test;
 
 public class VlessConfigEditorTests
 {
-    private readonly IVlessConfigEditor _editor = new VlessConfigEditor();
+    private readonly IUriEditor _editor = new VlessConfigEditor();
 
     private const string BaseVlessUri =
         "vless://00000000-0000-0000-0000-000000000000@old.example.com:443?encryption=none&security=none&type=xhttp#TestNode";
