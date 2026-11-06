@@ -1,0 +1,131 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "VPN Subscriptions Configuration",
+  "description": "Validation schema for vpn-simple-subscription client configurations (subscriptions.json)",
+  "type": "object",
+  "required": ["subscriptions"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "URI or path to the schema definition"
+    },
+    "subscriptions": {
+      "type": "array",
+      "description": "List of client subscription profiles",
+      "items": {
+        "$ref": "#/definitions/vpnConnection"
+      }
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "vpnConnection": {
+      "type": "object",
+      "required": ["clientId"],
+      "properties": {
+        "clientId": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Unique identifier for the VPN client profile"
+        },
+        "engine": {
+          "type": "string",
+          "enum": ["static", "fetch"],
+          "default": "static",
+          "description": "Subscription engine: 'static' for local configs, 'fetch' for dynamic upstream"
+        },
+        "connections": {
+          "type": "array",
+          "description": "List of static VPN connection definitions (used when engine is 'static')",
+          "items": {
+            "$ref": "#/definitions/vpnConnectionDetails"
+          }
+        },
+        "subscriptionUrl": {
+          "type": "string",
+          "format": "uri",
+          "description": "Upstream subscription URL (required when engine is 'fetch')"
+        },
+        "overrides": {
+          "type": "array",
+          "description": "Targeted node overrides applied to fetched upstream configurations",
+          "items": {
+            "$ref": "#/definitions/vpnConnectionOverride"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional notes or remarks for this client profile"
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": { "engine": { "const": "fetch" } }
+          },
+          "then": {
+            "required": ["subscriptionUrl"]
+          }
+        }
+      ]
+    },
+    "vpnConnectionDetails": {
+      "type": "object",
+      "required": ["connectionString"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Display title or node remark fragment"
+        },
+        "connectionString": {
+          "type": "string",
+          "description": "The raw connection URI (e.g. vless://...)"
+        },
+        "host": {
+          "type": "string",
+          "description": "Optional destination host override"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Optional destination port override (1-65535)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "vpnConnectionOverride": {
+      "type": "object",
+      "properties": {
+        "matchSni": {
+          "type": "string",
+          "description": "Match upstream node whose SNI parameter equals this value"
+        },
+        "matchHost": {
+          "type": "string",
+          "description": "Match upstream node whose host query param or destination host equals this value"
+        },
+        "title": {
+          "type": "string",
+          "description": "Override the node title / remark fragment"
+        },
+        "host": {
+          "type": "string",
+          "description": "Override the destination server host"
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535,
+          "description": "Override the destination server port (1-65535)"
+        }
+      },
+      "anyOf": [
+        { "required": ["matchSni"] },
+        { "required": ["matchHost"] }
+      ],
+      "additionalProperties": false
+    }
+  }
+}

@@ -28,7 +28,7 @@ public class SubscriptionServiceTests : IDisposable
         List<VpnConnection> connections,
         IEnumerable<ISubscriptionEngine>? engines = null)
     {
-        var json = JsonSerializer.Serialize(connections);
+        var json = JsonSerializer.Serialize(new SubscriptionsDocument { Subscriptions = connections });
         File.WriteAllText(_tempFilePath, json);
 
         var options = Options.Create(new AppSettings

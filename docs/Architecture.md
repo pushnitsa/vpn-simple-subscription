@@ -85,50 +85,50 @@ Previous versions utilized a static `CustomHeadersMiddleware` that unconditional
 
 ## 3. Configuration Schema (`subscriptions.json`)
 
-The storage file contains a JSON array of client subscription objects. A client defines either a `static` profile or a `fetch` profile.
+The storage file contains a root configuration object linking directly to `subscriptions.schema.json` via `$schema`, holding an array of client subscription profiles under `subscriptions`. A client defines either a `static` profile or a `fetch` profile.
 
-### 3.1. Static Engine Profile
 ```json
 {
-  "clientId": "static-user",
-  "engine": "static",
-  "connections": [
+  "$schema": "./subscriptions.schema.json",
+  "subscriptions": [
     {
-      "title": "Direct Node",
-      "connectionString": "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp"
+      "clientId": "static-user",
+      "engine": "static",
+      "connections": [
+        {
+          "title": "Direct Node",
+          "connectionString": "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp"
+        },
+        {
+          "title": "Redirected Node",
+          "connectionString": "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp",
+          "host": "custom.example.com",
+          "port": 8443
+        }
+      ],
+      "notes": "Static profile with multiple connections"
     },
     {
-      "title": "Redirected Node",
-      "connectionString": "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=tcp",
-      "host": "custom.example.com",
-      "port": 8443
+      "clientId": "dynamic-user",
+      "engine": "fetch",
+      "subscriptionUrl": "https://example.com:8802/sub/test123",
+      "overrides": [
+        {
+          "matchSni": "sni.example.com",
+          "title": "Reality CDN Node",
+          "host": "reality-proxy.example.com",
+          "port": 443
+        },
+        {
+          "matchHost": "node1.example.com",
+          "title": "Plain XHTTP Node",
+          "host": "plain-proxy.example.com",
+          "port": 443
+        }
+      ],
+      "notes": "3x-UI upstream subscription with targeted node overrides"
     }
-  ],
-  "notes": "Static profile with multiple connections"
-}
-```
-
-### 3.2. Fetch Engine Profile (with SNI & Host Matching)
-```json
-{
-  "clientId": "dynamic-user",
-  "engine": "fetch",
-  "subscriptionUrl": "https://example.com:8802/sub/test123",
-  "overrides": [
-    {
-      "matchSni": "sni.example.com",
-      "title": "Reality CDN Node",
-      "host": "reality-proxy.example.com",
-      "port": 443
-    },
-    {
-      "matchHost": "node1.example.com",
-      "title": "Plain XHTTP Node",
-      "host": "plain-proxy.example.com",
-      "port": 443
-    }
-  ],
-  "notes": "3x-UI upstream subscription with targeted node overrides"
+  ]
 }
 ```
 

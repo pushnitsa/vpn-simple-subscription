@@ -55,10 +55,13 @@ public class SubscriptionService(
                 await _semaphoreSlim.WaitAsync();
 
                 var fileContent = await File.ReadAllTextAsync(options.Value.SubscriptionStorageDiscoveryPath);
+                var doc = JsonSerializer.Deserialize<SubscriptionsDocument>(fileContent, _jsonSerializerOptions);
 
                 _vpnConnections.Clear();
-                _vpnConnections.AddRange(
-                    JsonSerializer.Deserialize<List<VpnConnection>>(fileContent, _jsonSerializerOptions)!);
+                if (doc?.Subscriptions != null)
+                {
+                    _vpnConnections.AddRange(doc.Subscriptions);
+                }
 
                 _expiration = DateTime.UtcNow.AddMinutes(5);
             }
