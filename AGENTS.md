@@ -38,6 +38,7 @@ Follow the Karpathy guidelines:
 
 ## 5. Git Operations
 - **Never run `git push`**: Do NOT execute `git push` or attempt to push commits to remote repositories under any circumstances. Local commits (`git commit`) are allowed when requested, but pushing must always be left to the user.
+- **Commit Message Conventions**: Every commit message must start with a conventional commit type prefix (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`, etc.) followed by a concise, descriptive message.
 
 ## 6. Build, Test & Run Commands
 - **Build Solution**:
