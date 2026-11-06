@@ -80,6 +80,24 @@ public class VlessConfigEditor : IUriEditor
         return FormatUri(uri, builder, queryParams);
     }
 
+    public IReadOnlyDictionary<string, string> GetQueryParameters(string uri)
+    {
+        if (string.IsNullOrWhiteSpace(uri))
+        {
+            throw new ArgumentException("URI cannot be empty or whitespace.", nameof(uri));
+        }
+
+        var (_, queryParams) = Parse(uri);
+        var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+
+        foreach (var pair in queryParams)
+        {
+            dict[pair.Key] = Uri.UnescapeDataString(pair.Value);
+        }
+
+        return dict;
+    }
+
     private static (UriBuilder builder, List<KeyValuePair<string, string>> queryParams) Parse(string uri)
     {
         var builder = new UriBuilder(uri);

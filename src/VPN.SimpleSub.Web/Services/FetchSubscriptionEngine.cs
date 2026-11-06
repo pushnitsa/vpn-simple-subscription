@@ -74,10 +74,10 @@ public class FetchSubscriptionEngine(
             return uri.Contains('#') ? uri : ConnectionLineFormatter.Format(uri, defaultTitle);
         }
 
-        var parsed = new Uri(uri);
-        var sni = GetQueryParam(parsed.Query, "sni");
-        var httpHost = GetQueryParam(parsed.Query, "host");
-        var serverHost = parsed.Host;
+        var queryParams = uriEditor.GetQueryParameters(uri);
+        var sni = queryParams.GetValueOrDefault("sni");
+        var httpHost = queryParams.GetValueOrDefault("host");
+        var serverHost = new Uri(uri).Host;
 
         var matchedOverride = overrides.FirstOrDefault(o =>
             Matches(o, sni, httpHost, serverHost));
@@ -112,30 +112,5 @@ public class FetchSubscriptionEngine(
         }
 
         return false;
-    }
-
-    private static string? GetQueryParam(string rawQuery, string key)
-    {
-        if (string.IsNullOrEmpty(rawQuery))
-        {
-            return null;
-        }
-
-        var trimmed = rawQuery.StartsWith('?') ? rawQuery[1..] : rawQuery;
-        var pairs = trimmed.Split('&', StringSplitOptions.RemoveEmptyEntries);
-
-        foreach (var pair in pairs)
-        {
-            var eq = pair.IndexOf('=');
-            var k = eq >= 0 ? pair[..eq] : pair;
-            var v = eq >= 0 ? pair[(eq + 1)..] : string.Empty;
-
-            if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase))
-            {
-                return Uri.UnescapeDataString(v);
-            }
-        }
-
-        return null;
     }
 }

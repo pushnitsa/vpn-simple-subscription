@@ -67,6 +67,7 @@ Different client profiles require different resolution strategies. Engines retur
 * **`IUriEditor` / `VlessConfigEditor`**:
   * Adheres strictly to RFC 3986 URI conventions.
   * Safely modifies `Host`, `Port`, and query parameters (such as `sni`) without corrupting UUIDs, URL-encoded parameters, or complex JSON inside `extra`.
+  * Extracts and unescapes query parameters (`GetQueryParameters`) into a case-insensitive dictionary for consumers.
 * **`ISubscriptionFetcher` / `SubscriptionFetcher`**:
   * Fetches upstream subscription endpoints via `IHttpClientFactory`.
   * Decodes Base64 or plain HTTP response bodies into a list of VLESS configurations.

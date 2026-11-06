@@ -125,4 +125,57 @@ public class VlessConfigEditorTests
         Assert.Contains("type=xhttp", uri.Query);
         Assert.Equal("#TestNode", uri.Fragment);
     }
+
+    [Fact]
+    public void GetQueryParameters_ShouldExtractAllParameters_AndUnescapeValues()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=xhttp&security=reality&sni=sni.example.com&path=%2Fapi%2Fv1&extra=%7B%22mode%22%3A%22multi%22%7D#Node";
+
+        // Act
+        var parameters = _editor.GetQueryParameters(uri);
+
+        // Assert
+        Assert.Equal("xhttp", parameters["type"]);
+        Assert.Equal("reality", parameters["security"]);
+        Assert.Equal("sni.example.com", parameters["sni"]);
+        Assert.Equal("/api/v1", parameters["path"]);
+        Assert.Equal("{\"mode\":\"multi\"}", parameters["extra"]);
+    }
+
+    [Fact]
+    public void GetQueryParameters_ShouldBeCaseInsensitive()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=xhttp&SNI=sni.example.com#Node";
+
+        // Act
+        var parameters = _editor.GetQueryParameters(uri);
+
+        // Assert
+        Assert.Equal("xhttp", parameters["TYPE"]);
+        Assert.Equal("sni.example.com", parameters["sni"]);
+    }
+
+    [Fact]
+    public void GetQueryParameters_ShouldReturnEmptyDictionary_WhenUriHasNoQuery()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@example.com:443#Node";
+
+        // Act
+        var parameters = _editor.GetQueryParameters(uri);
+
+        // Assert
+        Assert.Empty(parameters);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void GetQueryParameters_ShouldThrowArgumentException_WhenUriIsInvalid(string invalidUri)
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _editor.GetQueryParameters(invalidUri));
+    }
 }

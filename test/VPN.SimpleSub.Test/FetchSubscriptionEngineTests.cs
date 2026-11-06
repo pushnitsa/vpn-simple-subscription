@@ -194,6 +194,8 @@ public class FetchSubscriptionEngineTests
 
     private class FakeUriEditor : IUriEditor
     {
+        private readonly VlessConfigEditor _realEditor = new();
+
         public string SetHostAndPort(string uri, string? host = null, int? port = null)
         {
             var builder = new UriBuilder(uri);
@@ -210,5 +212,6 @@ public class FetchSubscriptionEngineTests
 
         public string SetQueryParameter(string uri, string key, string value) => uri;
         public string RemoveQueryParameter(string uri, string key) => uri;
+        public IReadOnlyDictionary<string, string> GetQueryParameters(string uri) => _realEditor.GetQueryParameters(uri);
     }
 }

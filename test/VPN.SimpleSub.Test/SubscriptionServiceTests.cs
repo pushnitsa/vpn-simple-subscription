@@ -147,5 +147,6 @@ public class SubscriptionServiceTests : IDisposable
         public string SetHostAndPort(string uri, string? host = null, int? port = null) => uri;
         public string SetQueryParameter(string uri, string key, string value) => uri;
         public string RemoveQueryParameter(string uri, string key) => uri;
+        public IReadOnlyDictionary<string, string> GetQueryParameters(string uri) => new Dictionary<string, string>();
     }
 }
