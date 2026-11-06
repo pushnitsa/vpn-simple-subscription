@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using VPN.SimpleSub.Web.Constants;
 using VPN.SimpleSub.Web.Models;
@@ -7,39 +6,25 @@ using VPN.SimpleSub.Web.Services;
 
 namespace VPN.SimpleSub.Test;
 
-public class SubscriptionServiceTests : IDisposable
+public class SubscriptionServiceTests
 {
-    private readonly string _tempFilePath;
-
-    public SubscriptionServiceTests()
-    {
-        _tempFilePath = Path.GetTempFileName();
-    }
-
-    public void Dispose()
-    {
-        if (File.Exists(_tempFilePath))
-        {
-            File.Delete(_tempFilePath);
-        }
-    }
-
-    private SubscriptionService CreateService(
+    private static SubscriptionService CreateService(
         List<VpnConnection> connections,
         IEnumerable<ISubscriptionEngine>? engines = null)
     {
-        var json = JsonSerializer.Serialize(new SubscriptionsDocument { Subscriptions = connections });
-        File.WriteAllText(_tempFilePath, json);
-
         var options = Options.Create(new AppSettings
         {
-            SubscriptionStorageDiscoveryPath = _tempFilePath,
+            SubscriptionStorageDiscoveryPath = "dummy-path",
             SubscriptionRoute = "sub"
         });
 
+        var document = new SubscriptionsDocument { Subscriptions = connections };
+        var reader = new FakeDocumentReader(document);
+
         return new SubscriptionService(
             options,
-            engines ?? [new StaticSubscriptionEngine(new FakeUriEditor())]);
+            engines ?? [new StaticSubscriptionEngine(new FakeUriEditor())],
+            reader);
     }
 
     [Fact]
@@ -131,6 +116,12 @@ public class SubscriptionServiceTests : IDisposable
 
         // Assert
         Assert.Null(result);
+    }
+
+    private class FakeDocumentReader(SubscriptionsDocument? document) : ISubscriptionDocumentReader
+    {
+        public Task<SubscriptionsDocument?> ReadAsync(string discoveryPath, CancellationToken cancellationToken = default) =>
+            Task.FromResult(document);
     }
 
     private class FakeEngine(string engineName, List<string> resolvedLines, Dictionary<string, string>? headers = null) : ISubscriptionEngine

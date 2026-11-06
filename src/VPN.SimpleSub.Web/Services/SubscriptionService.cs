@@ -1,5 +1,4 @@
 using System.Text;
-using System.Text.Json;
 using Microsoft.Extensions.Options;
 using VPN.SimpleSub.Web.Models;
 
@@ -7,15 +6,12 @@ namespace VPN.SimpleSub.Web.Services;
 
 public class SubscriptionService(
     IOptions<AppSettings> options,
-    IEnumerable<ISubscriptionEngine> engines) : ISubscriptionService
+    IEnumerable<ISubscriptionEngine> engines,
+    ISubscriptionDocumentReader documentReader) : ISubscriptionService
 {
     private readonly List<VpnConnection> _vpnConnections = new();
     private readonly SemaphoreSlim _semaphoreSlim = new(1, 1);
     private DateTime? _expiration;
-    private readonly JsonSerializerOptions _jsonSerializerOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     public async Task<SubscriptionResponse?> GetSubscriptionAsync(string clientId)
     {
@@ -54,8 +50,7 @@ public class SubscriptionService(
             {
                 await _semaphoreSlim.WaitAsync();
 
-                var fileContent = await File.ReadAllTextAsync(options.Value.SubscriptionStorageDiscoveryPath);
-                var doc = JsonSerializer.Deserialize<SubscriptionsDocument>(fileContent, _jsonSerializerOptions);
+                var doc = await documentReader.ReadAsync(options.Value.SubscriptionStorageDiscoveryPath);
 
                 _vpnConnections.Clear();
                 if (doc?.Subscriptions != null)

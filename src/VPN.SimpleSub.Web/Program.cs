@@ -9,6 +9,7 @@ builder.Services.Configure<AppSettings>(builder.Configuration);
 builder.Services.AddControllers();
 builder.Services.AddHttpClient();
 builder.Services.AddSingleton<IUriEditor, VlessConfigEditor>();
+builder.Services.AddSingleton<ISubscriptionDocumentReader, SubscriptionDocumentReader>();
 builder.Services.AddSingleton<ISubscriptionFetcher, SubscriptionFetcher>();
 builder.Services.AddSingleton<ISubscriptionEngine, StaticSubscriptionEngine>();
 builder.Services.AddSingleton<ISubscriptionEngine, FetchSubscriptionEngine>();

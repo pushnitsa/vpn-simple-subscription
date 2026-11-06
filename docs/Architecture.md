@@ -12,7 +12,8 @@ The service exposes HTTP endpoints matching `{SubscriptionRoute}/{clientId}/plai
 flowchart TD
     Client["VPN Client<br/>(e.g., Shadowrocket, v2rayN)"]
     Controller["SubscriptionController<br/>({SubscriptionRoute}/{clientId}/plain)"]
-    Service["SubscriptionService<br/>(Caching & Storage Management)"]
+    Service["SubscriptionService<br/>(Caching & Orchestration)"]
+    DocReader["ISubscriptionDocumentReader (SubscriptionDocumentReader)<br/>(File Reading & Deserialization)"]
     Storage[("subscriptions.json<br/>Client Configurations")]
 
     subgraph Strategies["Subscription Engines"]
@@ -26,7 +27,8 @@ flowchart TD
 
     Client -->|HTTP GET| Controller
     Controller -->|Resolve client| Service
-    Service ---|Read / 5-min Cache| Storage
+    Service -->|Load / 5-min Cache| DocReader
+    DocReader --- Storage
     Service -->|engine: static| StaticEngine
     Service -->|engine: fetch| FetchEngine
     StaticEngine -->|Format URIs| UriEditor
@@ -43,8 +45,7 @@ flowchart TD
 ## 2. Core Components & Responsibilities
 
 ### 2.1. `SubscriptionService`
-* **Storage & Caching**: Reads `subscriptions.json` from the path configured in `AppSettings.SubscriptionStorageDiscoveryPath`. Employs a thread-safe double-checked lock with `SemaphoreSlim` and a 5-minute TTL to minimize disk I/O.
-* **Orchestration**: Resolves the client entry matching `clientId`, delegates resolution to the appropriate `ISubscriptionEngine`, joins the resulting configs with newline characters (`\n`), encodes them in Base64, and returns a `SubscriptionResponse(Content, Headers)`.
+* **Caching & Orchestration**: Resolves the client entry matching `clientId`, delegates document reading to `ISubscriptionDocumentReader` with a thread-safe `SemaphoreSlim` and 5-minute TTL cache, delegates resolution to the appropriate `ISubscriptionEngine`, joins the resulting configs with newline characters (`\n`), encodes them in Base64, and returns a `SubscriptionResponse(Content, Headers)`.
 
 ### 2.2. Engine Strategy Pattern (`ISubscriptionEngine`)
 Different client profiles require different resolution strategies. Engines return an `EngineSubscriptionResult(Configs, Headers)` to supply both connection URIs and engine-supported HTTP headers:
@@ -64,6 +65,9 @@ Different client profiles require different resolution strategies. Engines retur
     * `Profile-Title`: Upstream profile title
 
 ### 2.3. Supporting Abstractions
+* **`ISubscriptionDocumentReader` / `SubscriptionDocumentReader`**:
+  * Receives a discovery path and parses `subscriptions.json` into a [`SubscriptionsDocument`](../src/VPN.SimpleSub.Web/Models/SubscriptionsDocument.cs) model.
+  * Encapsulates file I/O and JSON deserialization, decoupling configuration loading from orchestration and caching in `SubscriptionService`.
 * **`IUriEditor` / `VlessConfigEditor`**:
   * Adheres strictly to RFC 3986 URI conventions.
   * Safely modifies `Host`, `Port`, and query parameters (such as `sni`) without corrupting UUIDs, URL-encoded parameters, or complex JSON inside `extra`.
