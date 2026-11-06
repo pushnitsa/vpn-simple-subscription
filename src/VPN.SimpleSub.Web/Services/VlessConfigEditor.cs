@@ -142,17 +142,18 @@ public class VlessConfigEditor : IUriEditor
             }
         }
 
-        var result = builder.Uri.ToString();
+        var uri = builder.Uri;
+        var schemeAndServer = uri.GetComponents(UriComponents.SchemeAndServer | UriComponents.UserInfo, UriFormat.UriEscaped);
+        var path = uri.GetComponents(UriComponents.Path, UriFormat.UriEscaped);
+        var query = uri.GetComponents(UriComponents.Query, UriFormat.UriEscaped);
+        var fragment = uri.GetComponents(UriComponents.Fragment, UriFormat.Unescaped);
 
-        if (!originalUri.Contains("/?") && result.Contains("/?"))
-        {
-            result = result.Replace("/?", "?");
-        }
-        else if (!originalUri.Contains("/#") && result.Contains("/#") && !result.Contains('?'))
-        {
-            result = result.Replace("/#", "#");
-        }
+        var pathPart = string.IsNullOrEmpty(path)
+            ? (originalUri.Contains("/?") || originalUri.Contains("/#") || originalUri.EndsWith('/') ? "/" : string.Empty)
+            : "/" + path;
+        var queryPart = string.IsNullOrEmpty(query) ? string.Empty : "?" + query;
+        var fragmentPart = string.IsNullOrEmpty(fragment) ? string.Empty : "#" + fragment;
 
-        return result;
+        return $"{schemeAndServer}{pathPart}{queryPart}{fragmentPart}";
     }
 }

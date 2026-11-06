@@ -178,4 +178,58 @@ public class VlessConfigEditorTests
         // Act & Assert
         Assert.Throws<ArgumentException>(() => _editor.GetQueryParameters(invalidUri));
     }
+
+    [Fact]
+    public void SetHostAndPort_ShouldPreserveEscapedCharactersInQuery()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@old.example.com:443?type=xhttp&extra=%7B%22mode%22%3A%22multi%22%7D#Node 1";
+
+        // Act
+        var result = _editor.SetHostAndPort(uri, "new.example.com", 8443);
+
+        // Assert
+        Assert.StartsWith("vless://00000000-0000-0000-0000-000000000000@new.example.com:8443?type=xhttp&extra=%7B%22mode%22%3A%22multi%22%7D#Node 1", result);
+        Assert.Contains("extra=%7B%22mode%22%3A%22multi%22%7D", result);
+        Assert.DoesNotContain("extra={", result);
+        Assert.DoesNotContain("#Node%201", result); // Fragment remains unescaped
+        Assert.EndsWith("#Node 1", result);
+    }
+
+    [Fact]
+    public void SetQueryParameter_ShouldPreserveOtherEscapedParameters_AndEscapeNewValue()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=xhttp&extra=%7B%22mode%22%3A%22multi%22%7D#Node";
+
+        // Act 1: Add new parameter, verify existing escaped param is not unescaped
+        var updated = _editor.SetQueryParameter(uri, "sni", "sni.example.com");
+
+        // Assert 1
+        Assert.Contains("extra=%7B%22mode%22%3A%22multi%22%7D", updated);
+        Assert.Contains("sni=sni.example.com", updated);
+        Assert.DoesNotContain("extra={", updated);
+
+        // Act 2: Overwrite extra with a JSON object, verify it gets URL-encoded
+        var updatedExtra = _editor.SetQueryParameter(uri, "extra", "{\"mode\":\"packet-up\"}");
+
+        // Assert 2
+        Assert.Contains("extra=%7B%22mode%22%3A%22packet-up%22%7D", updatedExtra);
+        Assert.DoesNotContain("extra={", updatedExtra);
+    }
+
+    [Fact]
+    public void RemoveQueryParameter_ShouldPreserveOtherEscapedParameters()
+    {
+        // Arrange
+        const string uri = "vless://00000000-0000-0000-0000-000000000000@example.com:443?type=xhttp&extra=%7B%22mode%22%3A%22multi%22%7D#Node";
+
+        // Act
+        var result = _editor.RemoveQueryParameter(uri, "type");
+
+        // Assert
+        Assert.Contains("extra=%7B%22mode%22%3A%22multi%22%7D", result);
+        Assert.DoesNotContain("type=", result);
+        Assert.DoesNotContain("extra={", result);
+    }
 }
